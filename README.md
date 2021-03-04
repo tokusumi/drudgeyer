@@ -13,11 +13,11 @@ features (in the future):
 
 ## Roadmap
 
-* [] Add log logger
-* [] Add DB (SQLite3), Redis Queue
-* [] Add registration task with dependency directory
-* [] Add notifier (slack, line notify, sidekiq)
-* [] Add documentation
-* [] Fix Ctrl-C problem for asyncio.sleep
-* [] Make worker daemon process 
-* [] Add Test
+* [ ] Add log logger
+* [ ] Add DB (SQLite3), Redis Queue
+* [ ] Add registration task with dependency directory
+* [ ] Add notifier (slack, line notify, sidekiq)
+* [ ] Add documentation
+* [ ] Fix Ctrl-C problem for asyncio.sleep
+* [ ] Make worker daemon process 
+* [ ] Add Test
