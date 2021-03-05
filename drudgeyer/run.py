@@ -24,11 +24,13 @@ def main(
     queue_ = QUEUE_CLASSES[queue]()
     logger_ = LOGGER_CLASSES[logger]()
 
-    try:
-        loop = asyncio.get_event_loop()
-        if http:
-            loop.create_task(run_receiver(loop))
-        loop.run_until_complete(Worker(logger_, queue_, freq=frequency)._run(loop))
-    except KeyboardInterrupt:
-        loop.close()
-        return
+    loop = asyncio.get_event_loop()
+    loop.set_debug(False)
+
+    worker = Worker(logger_, queue_, freq=frequency)
+
+    if http:
+        server = run_receiver(loop, [worker.handle_exit])
+        loop.create_task(server.serve())
+
+    loop.run_until_complete(worker._run(loop))

@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 class BaseQueue(ABC):
     @abstractmethod
-    def dequeue(self) -> Optional[str]:
+    def dequeue(self) -> Optional[BaseQueueModel]:
         ...
 
     @abstractmethod
@@ -29,7 +29,7 @@ class BaseQueue(ABC):
         ...
 
     @abstractmethod
-    def list(self) -> List["QueueModel"]:
+    def list(self) -> List[BaseQueueModel]:
         ...
 
     @abstractmethod
@@ -52,7 +52,7 @@ class FileQueue(BaseQueue):
         with file.open("w") as f:
             f.write(cmd)
 
-    def dequeue(self) -> Optional[str]:
+    def dequeue(self) -> Optional[BaseQueueModel]:
         files = list(self.path.glob("*-*-*-*-*-*-*"))
         if not files:
             return None
@@ -67,9 +67,9 @@ class FileQueue(BaseQueue):
         with target.open() as f:
             cmd = f.read()
         target.rename("done/" + target.name)
-        return cmd
+        return BaseQueueModel(id=target.name, command=cmd, order=0)
 
-    def list(self) -> List["QueueModel"]:
+    def list(self) -> List[BaseQueueModel]:
         files = list(self.path.glob("*-*-*-*-*-*-*"))
         if not files:
             return []

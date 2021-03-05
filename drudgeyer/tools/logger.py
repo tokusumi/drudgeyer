@@ -7,7 +7,7 @@ from typing import Dict, Type
 
 class BaseLog(ABC):
     @abstractmethod
-    def intro(self, command: str) -> None:
+    def reset(self, id: str, command: str) -> None:
         ...
 
     @abstractmethod
@@ -29,7 +29,7 @@ class BaseLog(ABC):
 
 
 class PrintLogger(BaseLog):
-    def intro(self, command: str) -> None:
+    def reset(self, id: str, command: str) -> None:
         sys.stdout.write('\nTask: "' + command + '"\n')
 
     def output(self, input: bytes) -> None:
