@@ -17,7 +17,7 @@ class BaseWorker(ABC):
 
     # fmt: off
     @abstractmethod
-    async def dequeue(self) -> BaseQueueModel: ...  # pragma: no cover
+    async def dequeue(self) -> Optional[BaseQueueModel]: ...  # pragma: no cover
     @abstractmethod
     async def run(self, task: BaseQueueModel, loop: asyncio.AbstractEventLoop) -> None: ...  # pragma: no cover
     # fmt: on
@@ -50,7 +50,7 @@ class Worker(BaseWorker):
         self._queue = queue
         super().__init__(*args, **kwargs)
 
-    async def dequeue(self) -> Any:
+    async def dequeue(self) -> Optional[BaseQueueModel]:
         return self._queue.dequeue()
 
     async def run(self, task: BaseQueueModel, loop: asyncio.AbstractEventLoop) -> None:
