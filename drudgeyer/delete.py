@@ -8,7 +8,7 @@ from drudgeyer.tools.queue import QUEUE_CLASSES, Queues
 def main(
     id: str = typer.Argument(..., help="Unique ID of target"),
     directory: Path = typer.Option(
-        Path("./"), "-d", "--dir", help="directory for dependencies"
+        Path("./storage"), "-d", "--dir", help="directory for dependencies"
     ),
     queue: Queues = typer.Option("file", "-q", help="select queue"),
 ) -> None:

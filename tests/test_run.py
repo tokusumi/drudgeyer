@@ -1,5 +1,6 @@
 import asyncio
 import os
+import tempfile
 import threading
 import time
 from asyncio.events import AbstractEventLoop
@@ -77,6 +78,8 @@ def test_run():
     # ctrl-c will be sent to terminate main process 5 sec later
     lazy_fire_terminate_signal(5)
 
-    # running main process (inspect queue, handle worker and ...)
-    result = runner.invoke(app)
-    assert result.exit_code == 0, result.stdout
+    with tempfile.TemporaryDirectory() as tempdir:
+
+        # running main process (inspect queue, handle worker and ...)
+        result = runner.invoke(app, ["-d", tempdir])
+        assert result.exit_code == 0, result.stdout

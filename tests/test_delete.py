@@ -45,8 +45,9 @@ def test_delete():
 
 
 def test_delete_failed():
-    result = runner.invoke(app, ["delete", ""])
-    assert result.exit_code == 1, result.stdout
+    with tempfile.TemporaryDirectory() as tempdir:
+        result = runner.invoke(app, ["delete", "", "-d", tempdir])
+        assert result.exit_code == 1, result.stdout
 
     with tempfile.TemporaryDirectory() as tempdir:
         result = runner.invoke(app, ["delete", "x", "-d", tempdir])

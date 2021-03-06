@@ -18,5 +18,6 @@ def test_add():
 
 
 def test_add_failed():
-    result = runner.invoke(app, [""])
-    assert result.exit_code == 1, result.stdout
+    with tempfile.TemporaryDirectory() as tempdir:
+        result = runner.invoke(app, ["", "-d", tempdir])
+        assert result.exit_code == 1, result.stdout

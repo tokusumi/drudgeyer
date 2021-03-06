@@ -1,5 +1,6 @@
 import tempfile
 from pathlib import Path
+from time import sleep
 
 from drudgeyer.tools.logger import PrintLogger, QueueFileLogger
 
@@ -19,5 +20,6 @@ def test_filelogger():
         logger.log("test")
 
         log = path / "xxx"
+        sleep(0.1)
         with log.open() as f:
             assert "test\n" == f.readlines()[-1]

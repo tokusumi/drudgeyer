@@ -12,7 +12,7 @@ from drudgeyer.tools.shell import Worker
 def main(
     http: bool = typer.Option(True, "-h", help="connect via http"),
     directory: Path = typer.Option(
-        Path("./"), "-d", "--dir", help="directory for dependencies"
+        Path("./storage"), "-d", "--dir", help="directory for dependencies"
     ),
     queue: Queues = typer.Option("file", "-q", help="select queue"),
     logger: Loggers = typer.Option("console", "-l", help="select logger"),
