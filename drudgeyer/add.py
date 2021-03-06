@@ -12,9 +12,9 @@ def main(
     ),
     queue: Queues = typer.Option("file", "-q", help="select queue"),
 ) -> None:
-    """Pass new job queue via http connection
+    """Applicatin: Pass new job into Queue
     For:
-    - on-premise: Pass new job queue using Queue directly
+    - on-premise: Access with Queue directly
     - cloud (future): send string of command and zip file of dependencies
     """
     queue_ = QUEUE_CLASSES[queue](path=directory)

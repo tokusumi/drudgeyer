@@ -20,9 +20,9 @@ def main(
         3, "--freq", help="worker inspection frequency [sec]"
     ),
 ) -> None:
-    """Run daemon threads as follows:
-    - worker: run and wait subprocess for the latest job in queue, including logging.
-    - receiver: CRUD for Queue (receive job, get jobs, ...)
+    """Managements Runner for:
+    - Worker: run or wait worker subprocess for the latest job in queue, including logging.
+    - Queue: CRUD for Queue (add job, get jobs, ...)
     """
 
     queue_ = QUEUE_CLASSES[queue](directory)
