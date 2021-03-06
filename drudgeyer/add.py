@@ -17,7 +17,7 @@ def main(
     - on-premise: Pass new job queue using Queue directly
     - cloud (future): send string of command and zip file of dependencies
     """
-    queue_ = QUEUE_CLASSES[queue]()
+    queue_ = QUEUE_CLASSES[queue](path=directory)
     if not command:
         typer.secho("Invalid command", fg=typer.colors.RED)
         raise typer.Abort()

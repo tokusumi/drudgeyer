@@ -6,46 +6,42 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
 from queue import SimpleQueue as Queue
-from typing import Dict, List, Type
+from typing import Any, Callable, Dict, List, Type
 
 
 class BaseLog(ABC):
+    @property
     @abstractmethod
-    def reset(self, id: str, command: str) -> None:
+    def log(self) -> Callable[[str], Any]:
         ...
 
-    @abstractmethod
+    def reset(self, id: str, command: str) -> None:
+        self.log('\nTask: "' + command + '"\n')
+
     def output(self, input: bytes) -> None:
-        ...
+        if input:
+            self.log(input.decode())
 
     async def _output(self, pipe: asyncio.StreamReader) -> None:
         while not pipe.at_eof():
             line = await pipe.readline()
             self.output(line)
 
-    @abstractmethod
     def exception(self, exception: BaseException) -> None:
-        ...
+        self.log("Exception occured: %s\n" % exception)
+        self.log("Task failed\n")
 
-    @abstractmethod
     def finish(self) -> None:
-        ...
+        self.log("Task finished\n")
 
 
 class PrintLogger(BaseLog):
-    def reset(self, id: str, command: str) -> None:
-        sys.stdout.write('\nTask: "' + command + '"\n')
+    def __init__(self) -> None:
+        self._log = sys.stdout.write
 
-    def output(self, input: bytes) -> None:
-        if input:
-            sys.stdout.buffer.write(input)
-
-    def exception(self, exception: BaseException) -> None:
-        sys.stdout.write("Exception occured: %s\n" % exception)
-        sys.stdout.write("Task failed\n")
-
-    def finish(self) -> None:
-        sys.stdout.write("Task finished\n")
+    @property
+    def log(self) -> Callable[[str], Any]:
+        return self._log
 
 
 class LocalQueueHandler(logging.handlers.QueueHandler):
@@ -59,11 +55,16 @@ class LocalQueueHandler(logging.handlers.QueueHandler):
 
 
 class QueueFileLogger(BaseLog):
-    def reset(self, id: str, command: str) -> None:
-        self.set_handler(id)
+    @property
+    def log(self) -> Callable[[str], Any]:
+        return self._log
+
+    def reset(self, id: str, command: str, logdir: str = "log") -> None:
+        self.set_handler(id, logdir=logdir)
         self._setup_logging_queue()
         self.logger = logging.getLogger()
-        self.logger.info('Task: "' + command + '"')
+        self._log = self.logger.info
+        super().reset(id, command)
 
     def set_handler(self, id: str, logdir: str = "log") -> None:
         root = logging.getLogger()
@@ -94,17 +95,6 @@ class QueueFileLogger(BaseLog):
             queue, *handlers, respect_handler_level=True
         )
         listener.start()
-
-    def output(self, input: bytes) -> None:
-        if input:
-            self.logger.info("%s" % input.decode().rstrip("\n"))
-
-    def exception(self, exception: BaseException) -> None:
-        self.logger.info("Exception occured: %s" % exception)
-        self.logger.info("Task failed")
-
-    def finish(self) -> None:
-        self.logger.info("Task finished")
 
 
 class Loggers(Enum):
