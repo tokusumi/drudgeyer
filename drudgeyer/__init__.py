@@ -11,4 +11,4 @@ app.command("delete")(delete.main)
 
 @app.callback()
 def callback() -> None:
-    """Job queue tool"""
+    """Job Queue Tools"""

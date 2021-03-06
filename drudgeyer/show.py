@@ -11,9 +11,9 @@ def main(
     ),
     queue: Queues = typer.Option("file", "-q", help="select queue"),
 ) -> None:
-    """Get current job queue via http connection
+    """Application: Get current jobs from Queue
     For:
-    - on-premise: Get current job queue using Queue directly
+    - on-premise: Access with Queue directly
     - cloud (future): send string of command and zip file of dependencies
     """
     queue_ = QUEUE_CLASSES[queue](path=directory)
