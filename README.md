@@ -13,7 +13,7 @@ features (in the future):
 
 ## Roadmap
 
-* [ ] Add log logger
+* [x] Add file logger
 * [ ] Add DB (SQLite3), Redis Queue
 * [ ] Add registration task with dependency directory
 * [ ] Add notifier (slack, line notify, sidekiq)
