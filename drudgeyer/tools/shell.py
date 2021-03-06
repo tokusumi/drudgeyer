@@ -15,6 +15,13 @@ class BaseWorker(ABC):
         self.should_exit: bool = False
         self.force_exit: bool = False
 
+    # fmt: off
+    @abstractmethod
+    async def dequeue(self) -> Optional[BaseQueueModel]: ...  # pragma: no cover
+    @abstractmethod
+    async def run(self, task: BaseQueueModel, loop: asyncio.AbstractEventLoop) -> None: ...  # pragma: no cover
+    # fmt: on
+
     async def _run(self, loop: asyncio.AbstractEventLoop) -> None:
         try:
             while not self.should_exit:
@@ -25,19 +32,8 @@ class BaseWorker(ABC):
                     await self.run(task, loop)
                 else:
                     await asyncio.sleep(self.freq)
-
-                if not self.should_exit:
-                    await asyncio.sleep(self.freq)
-        except asyncio.CancelledError as e:
+        except asyncio.CancelledError:
             return
-
-    @abstractmethod
-    async def dequeue(self) -> BaseQueueModel:
-        ...
-
-    @abstractmethod
-    async def run(self, task: BaseQueueModel, loop: asyncio.AbstractEventLoop) -> None:
-        ...
 
     def handle_exit(self, sig: Signals, frame: Optional[FrameType]) -> None:
         if self.should_exit:
@@ -54,7 +50,7 @@ class Worker(BaseWorker):
         self._queue = queue
         super().__init__(*args, **kwargs)
 
-    async def dequeue(self) -> Any:
+    async def dequeue(self) -> Optional[BaseQueueModel]:
         return self._queue.dequeue()
 
     async def run(self, task: BaseQueueModel, loop: asyncio.AbstractEventLoop) -> None:
@@ -83,3 +79,7 @@ class Worker(BaseWorker):
         else:
             # no exception was raised
             self._logger.finish()
+
+        if exitcode == 0:
+            # success
+            pass

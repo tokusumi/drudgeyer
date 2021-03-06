@@ -20,29 +20,29 @@ if TYPE_CHECKING:
 
 
 class BaseQueue(ABC):
+    # fmt: off
+    def __init__(self, path: Path) -> None: ...  # pragma: no cover
     @abstractmethod
-    def dequeue(self) -> Optional[BaseQueueModel]:
-        ...
-
+    def dequeue(self) -> Optional[BaseQueueModel]: ...  # pragma: no cover
     @abstractmethod
-    def enqueue(self, cmd: str) -> None:
-        ...
-
+    def enqueue(self, cmd: str) -> None: ...  # pragma: no cover
     @abstractmethod
-    def list(self) -> List[BaseQueueModel]:
-        ...
-
+    def list(self) -> List[BaseQueueModel]: ...  # pragma: no cover
     @abstractmethod
-    def pop(self, id: str) -> None:
-        ...
+    def pop(self, id: str) -> None: ...  # pragma: no cover
+    # fmt: on
 
 
 class FileQueue(BaseQueue):
-    def __init__(self, dir: str = "storage") -> None:
-        path = Path(dir)
+    def __init__(self, path: Path = Path("storage")) -> None:
+        self.path = path
+        self.done = path / "done"
+
         if not path.is_dir():
             path.mkdir(exist_ok=True)
-        self.path = path
+
+        if not self.done.is_dir():
+            self.done.mkdir(exist_ok=True)
 
     def enqueue(self, cmd: str) -> None:
         now = datetime.now()
@@ -66,7 +66,7 @@ class FileQueue(BaseQueue):
         target = files[minn_idx]
         with target.open() as f:
             cmd = f.read()
-        target.rename("done/" + target.name)
+        target.rename(self.done.resolve() / target.name)
         return BaseQueueModel(id=target.name, command=cmd, order=0)
 
     def list(self) -> List[BaseQueueModel]:

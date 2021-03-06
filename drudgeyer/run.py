@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 
 import typer
 
@@ -10,6 +11,9 @@ from drudgeyer.tools.shell import Worker
 
 def main(
     http: bool = typer.Option(True, "-h", help="connect via http"),
+    directory: Path = typer.Option(
+        Path("./storage"), "-d", "--dir", help="directory for dependencies"
+    ),
     queue: Queues = typer.Option("file", "-q", help="select queue"),
     logger: Loggers = typer.Option("console", "-l", help="select logger"),
     frequency: float = typer.Option(
@@ -21,7 +25,7 @@ def main(
     - receiver: CRUD for Queue (receive job, get jobs, ...)
     """
 
-    queue_ = QUEUE_CLASSES[queue]()
+    queue_ = QUEUE_CLASSES[queue](directory)
     logger_ = LOGGER_CLASSES[logger]()
 
     loop = asyncio.get_event_loop()
