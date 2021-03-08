@@ -3,10 +3,19 @@ import logging
 import logging.handlers
 import sys
 from abc import ABC, abstractmethod
+from asyncio.events import AbstractEventLoop
+from asyncio.queues import Queue as aQueue
 from enum import Enum
 from pathlib import Path
 from queue import SimpleQueue as Queue
-from typing import Any, Callable, Dict, List, Type
+from typing import Any, Callable, Dict, List, Optional, Type
+
+from pydantic.main import BaseModel
+
+
+class LogModel(BaseModel):
+    id: str
+    log: str
 
 
 class BaseLog(ABC):
@@ -97,12 +106,35 @@ class QueueFileLogger(BaseLog):
         listener.start()
 
 
+class StreamingLogger(BaseLog):
+    def __init__(
+        self, maxsize: int = 1000, loop: Optional[AbstractEventLoop] = None
+    ) -> None:
+        self._log: aQueue[LogModel] = aQueue(maxsize, loop=loop)
+
+    def reset(self, id: str, command: str) -> None:
+        def log(command: str) -> None:
+            self._log.put_nowait(LogModel(id=id, log=command))
+
+        self._logfunc = log
+
+    @property
+    def log(self) -> Callable[[str], Any]:
+        return self._logfunc
+
+    async def dequeue(self) -> LogModel:
+        log = await self._log.get()
+        return log
+
+
 class Loggers(Enum):
     console = "console"
     log = "log"
+    stream = "stream"
 
 
 LOGGER_CLASSES: Dict[Loggers, Type[BaseLog]] = {
     Loggers.console: PrintLogger,
     Loggers.log: QueueFileLogger,
+    Loggers.stream: StreamingLogger,
 }

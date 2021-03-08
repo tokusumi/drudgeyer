@@ -3,7 +3,8 @@ from pathlib import Path
 
 import typer
 
-from drudgeyer.tools.logger import LOGGER_CLASSES, Loggers
+from drudgeyer.tools import log_streamer
+from drudgeyer.tools.logger import LOGGER_CLASSES, Loggers, StreamingLogger
 from drudgeyer.tools.queue import QUEUE_CLASSES, Queues
 from drudgeyer.tools.receiver import run_receiver
 from drudgeyer.tools.shell import Worker
@@ -15,7 +16,10 @@ def main(
         Path("./storage"), "-d", "--dir", help="directory for dependencies"
     ),
     queue: Queues = typer.Option("file", "-q", help="select queue"),
-    logger: Loggers = typer.Option("console", "-l", help="select logger"),
+    logger: Loggers = typer.Option("stream", "-l", help="select logger"),
+    streamer: log_streamer.LogStreamers = typer.Option(
+        "local", "-s", help="select log streamer"
+    ),
     frequency: float = typer.Option(
         3, "--freq", help="worker inspection frequency [sec]"
     ),
@@ -24,7 +28,6 @@ def main(
     - Worker: run or wait worker subprocess for the latest job in queue, including logging.
     - Queue: CRUD for Queue (add job, get jobs, ...)
     """
-
     queue_ = QUEUE_CLASSES[queue](directory)
     logger_ = LOGGER_CLASSES[logger]()
 
@@ -34,7 +37,19 @@ def main(
     worker = Worker(logger_, queue_, freq=frequency)
 
     if http:
-        server = run_receiver(loop, [worker.handle_exit])
-        loop.create_task(server.serve())
+        log_streamer_handler = log_streamer.QueueHandler()
+        log_streamer_class = log_streamer.LOGSTREAMER_CLASSES[streamer]
+        if log_streamer_class == log_streamer.LocalLogStreamer and isinstance(
+            logger_, StreamingLogger
+        ):
+            log_streamer_ = log_streamer.LocalLogStreamer(
+                [log_streamer.QueueFileHandler(), log_streamer_handler], logger_
+            )
+            server = run_receiver(loop, [worker.handle_exit, log_streamer_.handle_exit])
+            loop.create_task(server.serve())
+            loop.create_task(log_streamer_.entry_point())
 
-    loop.run_until_complete(worker._run(loop))
+    try:
+        loop.run_until_complete(worker._run(loop))
+    except KeyboardInterrupt:
+        pass
