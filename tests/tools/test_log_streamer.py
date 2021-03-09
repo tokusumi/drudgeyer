@@ -21,6 +21,9 @@ class ToyHandler(log_streamer.BaseHandler):
     async def add(self, id: str) -> None:
         self.cnt += 1
 
+    async def delete(self, id: str) -> None:
+        self.cnt = 1
+
 
 class ToyLogStreamer(log_streamer.BaseLogStreamer):
     async def recv(self) -> LogModel:
