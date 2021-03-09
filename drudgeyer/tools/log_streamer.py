@@ -13,12 +13,17 @@ from drudgeyer.tools.logger import LogModel, StreamingLogger
 
 
 class BaseHandler(ABC):
-    # fmt: off
     @abstractmethod
-    async def send(self, log: LogModel) -> None: ...
+    async def send(self, log: LogModel) -> None:
+        ...
+
     @abstractmethod
-    async def add(self, id: str) -> None: ...
-    # fmt: on
+    async def add(self, id: str) -> None:
+        ...
+
+    @abstractmethod
+    async def delete(self, id: str) -> None:
+        ...
 
 
 class BaseLogStreamer(ABC):
@@ -27,25 +32,34 @@ class BaseLogStreamer(ABC):
         self.should_exit = False
         self.force_exit = False
 
-    # fmt: off
     @abstractmethod
-    async def recv(self) -> LogModel: ...
+    async def recv(self) -> LogModel:
+        ...
+
     @abstractmethod
-    async def entry_point(self) -> None: ...
-    # fmt: on
+    async def entry_point(self) -> None:
+        ...
 
     async def streaming(self) -> None:
+        """streaming flow in a cycle.
+        helper method for entry_point
+        """
         log = await self.recv()
         self.send(log)
 
     def send(self, log: LogModel) -> None:
         asyncio.ensure_future(
-            asyncio.gather(*[streamer.send(log) for streamer in self._handlers])
+            asyncio.gather(*[handler.send(log) for handler in self._handlers])
         )
 
     def add(self, id: str) -> None:
         asyncio.ensure_future(
-            asyncio.gather(*[streamer.add(id) for streamer in self._handlers])
+            asyncio.gather(*[handler.add(id) for handler in self._handlers])
+        )
+
+    def delete(self, id: str) -> None:
+        asyncio.ensure_future(
+            asyncio.gather(*[handler.delete(id) for handler in self._handlers])
         )
 
     def handle_exit(self, sig: Signals, frame: Optional[FrameType]) -> None:
@@ -109,6 +123,9 @@ class QueueFileHandler(BaseHandler):
         self._setup_logging_queue(id)
         self.loggers[id] = logging.getLogger(id)
 
+    async def delete(self, id: str) -> None:
+        pass
+
     def set_handler(self, id: str, logdir: str = "log") -> None:
         logger = logging.getLogger(id)
         logger.setLevel(logging.INFO)
@@ -152,4 +169,11 @@ class QueueHandler(BaseHandler):
             await _queue.put(log.log)
 
     async def add(self, id: str) -> None:
-        self._queues[id] = Queue()
+        if not self._queues.get(id):
+            self._queues[id] = Queue()
+
+    async def delete(self, id: str) -> None:
+        try:
+            del self._queues[id]
+        except KeyError:
+            pass

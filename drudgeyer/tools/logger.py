@@ -124,6 +124,7 @@ class StreamingLogger(BaseLog):
 
     async def dequeue(self) -> LogModel:
         log = await self._log.get()
+        self._log.task_done()
         return log
 
 
