@@ -7,7 +7,7 @@ from asyncio.queues import Queue
 from dataclasses import dataclass
 from pathlib import Path
 from types import FrameType
-from typing import AsyncGenerator, Callable, Dict, List, Optional
+from typing import AsyncGenerator, Callable, Dict, List, Optional, Set
 
 from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
@@ -45,9 +45,10 @@ class LogQueue:
     """Queue in LogStreamer"""
 
     id: str
-    targets: List[str]
+    targets: Set[str]
     queue: "Queue[str]"
     live: bool = True
+    task: Optional["asyncio.Task[None]"] = None
 
 
 class LocalReadStremaer(BaseReadStreamer):
@@ -61,57 +62,34 @@ class LocalReadStremaer(BaseReadStreamer):
         if handler is None:
             raise ValueError("QueueHandler is not found")
         self.handler = handler
-        self._key_to_id: Dict[str, str] = {}
-        self._id_to_keys: Dict[str, List[str]] = {}
         self._key_to_readqueue: Dict[str, ReadQueue] = {}
         self._id_to_logqueue: Dict[str, LogQueue] = {}
         self._loop = loop if loop else asyncio.get_event_loop()
 
     def _reflesh(self) -> None:
-        key_to_id = {}
-        id_to_keys = {}
-        for read in self._key_to_readqueue.values():
-            if read.live:
-                target_log_queue = self._id_to_logqueue.get(read.target)
-                if target_log_queue:
-                    target_log_queue.targets.append(read.key)
         for log_queue in self._id_to_logqueue.values():
-            if log_queue.live:
-                living_read_queues = []
-                for key in log_queue.targets:
-                    read_queue = self._key_to_readqueue.get(key)
-                    if read_queue and read_queue.live:
-                        living_read_queues.append(key)
-                        key_to_id[key] = log_queue.id
-                id_to_keys[log_queue.id] = living_read_queues
-
-                if log_queue.id not in self._id_to_keys:
-                    loop = asyncio.get_event_loop()
-                    loop.create_task(self.entry_point(log_queue))
-
-        self._key_to_id = key_to_id
-        self._id_to_keys = id_to_keys
+            if not log_queue.live and log_queue.task is not None:
+                try:
+                    if not log_queue.task.cancelled():
+                        log_queue.task.cancel()
+                except asyncio.CancelledError as e:
+                    print(e)
 
     async def entry_point(self, log_queue: LogQueue) -> None:
         # possibly bottle neck
-        id = log_queue.id
         queue = log_queue.queue
-        while log_queue.live:
-            try:
+        try:
+            while log_queue.live:
                 log = await queue.get()
-                await asyncio.sleep(0.1)
-                log_queue.live = False
-            except RuntimeError:
-                # queue is deleted
-                log_queue.live = False
-                self._reflesh()
-                break
-            keys = self._id_to_keys.get(id)
-            if keys:
+                keys = log_queue.targets
                 for key in keys:
                     _queue = self._key_to_readqueue.get(key)
                     if _queue and _queue.live:
                         await _queue.queue.put(log)
+        except (RuntimeError, asyncio.CancelledError):
+            # queue is deleted
+            log_queue.live = False
+            self._reflesh()
 
     async def get(self, key: str) -> str:
         queue = self._key_to_readqueue.get(key)
@@ -122,11 +100,13 @@ class LocalReadStremaer(BaseReadStreamer):
         try:
             log = await queue.queue.get()
             return log
-        except RuntimeError:
+        except (RuntimeError, asyncio.CancelledError) as e:
+            print(e)
             queue.live = False
         raise ValueError("broken connection. try again")
 
     async def add_client(self, id: str, key: str) -> None:
+        # create if none
         read = self._key_to_readqueue.get(key)
         if read and read.target == id and read.live:
             pass
@@ -134,31 +114,46 @@ class LocalReadStremaer(BaseReadStreamer):
             read = ReadQueue(key=key, target=id, queue=Queue())
             self._key_to_readqueue[key] = read
 
+        # create if none
         log = self._id_to_logqueue.get(id)
         if log and log.live:
-            pass
+            log.targets.add(key)
         else:
             await self.handler.add(id)
             handler_queues = self.handler._queues
             queue = handler_queues.get(id)
             if queue:
-                log = LogQueue(id=id, targets=[], queue=queue)
+                log = LogQueue(
+                    id=id,
+                    targets={key},
+                    queue=queue,
+                )
                 self._id_to_logqueue[id] = log
+                loop = asyncio.get_event_loop()
+                log.task = loop.create_task(self.entry_point(log))
         self._reflesh()
 
     async def delete(self, key: str) -> None:
-        try:
-            read = self._key_to_readqueue.get(key)
-            if read:
-                read.live = False
+        # delete ReadQueue
+        read = self._key_to_readqueue.get(key)
+        if read:
+            read.live = False
+            try:
                 del self._key_to_readqueue[key]
-            for log in self._id_to_logqueue.values():
-                if not log.live:
-                    await self.handler.delete(log.id)
-            self._reflesh()
-
-        except KeyError:
-            pass
+            except KeyError:
+                pass
+        # cancel sync task and delete LogQueue
+        new_id_to_logqueue = {}
+        for log in self._id_to_logqueue.values():
+            if {key} == log.targets:
+                await self.handler.delete(log.id)
+                log.targets = set([])
+                log.live = False
+                if log.task:
+                    log.task.cancel()
+            else:
+                new_id_to_logqueue[log.id] = log
+        self._reflesh()
 
 
 class GetReadStreamer:
@@ -173,9 +168,8 @@ class GetReadStreamer:
             while not self.exit:
                 log = await self._streamer.get(self._key)
                 await self._ws.send_text(log)
-        except (Exception, WebSocketDisconnect):
+        except (Exception, WebSocketDisconnect, asyncio.CancelledError):
             pass
-        await self._ws.close()
 
     def manual_exit(self) -> None:
         self.exit = True
@@ -220,13 +214,14 @@ def create_app(read_streamer: BaseReadStreamer) -> FastAPI:
         streamer: GetReadStreamer = Depends(streamer(read_streamer)),
     ) -> None:
         loop = asyncio.get_event_loop()
-        loop.create_task(streamer.streaming())
+        task = loop.create_task(streamer.streaming())
 
         try:
             while True:
                 await ws.receive()
         except (Exception, WebSocketDisconnect):
             streamer.manual_exit()
+            task.cancel()
             await ws.close()
 
     return app
