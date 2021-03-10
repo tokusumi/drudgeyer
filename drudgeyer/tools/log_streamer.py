@@ -9,7 +9,7 @@ from signal import Signals
 from types import FrameType
 from typing import Dict, List, Optional, Type
 
-from drudgeyer.tools.logger import LogModel, StreamingLogger
+from drudgeyer.worker.logger import LogModel, StreamingLogger
 
 
 class BaseHandler(ABC):

@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from drudgeyer.tools import log_streamer
-from drudgeyer.tools.logger import LogModel
+from drudgeyer.worker.logger import LogModel
 from drudgeyer.tools.receiver import LocalReadStremaer, create_app
 
 

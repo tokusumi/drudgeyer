@@ -7,7 +7,7 @@ from signal import SIGINT
 import pytest
 
 from drudgeyer.tools import log_streamer
-from drudgeyer.tools.logger import LogModel, StreamingLogger
+from drudgeyer.worker.logger import LogModel, StreamingLogger
 
 
 class ToyHandler(log_streamer.BaseHandler):
