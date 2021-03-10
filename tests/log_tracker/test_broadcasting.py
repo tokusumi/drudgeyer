@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from drudgeyer.log_tracker import log_streamer
-from drudgeyer.log_tracker.receiver import LocalReadStremaer, create_app
+from drudgeyer.log_tracker.broadcasting import LocalReadStreamer, create_app
 from drudgeyer.worker.logger import LogModel
 
 
@@ -21,7 +21,7 @@ class ToyLogStreamer(log_streamer.BaseLogStreamer):
 def test_localread_streamer(event_loop: AbstractEventLoop) -> None:
     async def flow():
         logstreamer = ToyLogStreamer([log_streamer.QueueHandler()])
-        read_streamer = LocalReadStremaer(logstreamer)
+        read_streamer = LocalReadStreamer(logstreamer)
 
         id = "xxx"
         key = "key-something"
@@ -59,9 +59,9 @@ def test_localread_streamer(event_loop: AbstractEventLoop) -> None:
 def test_catch_broken_queue_error(event_loop: AbstractEventLoop) -> None:
     """test for deleting log queue when read queue is awaiting streaming data from log queue"""
     logstreamer = ToyLogStreamer([log_streamer.QueueHandler()])
-    read_streamer = LocalReadStremaer(logstreamer)
+    read_streamer = LocalReadStreamer(logstreamer)
 
-    async def flow(read_streamer: LocalReadStremaer):
+    async def flow(read_streamer: LocalReadStreamer):
         id = "xxx"
         key = "key-something"
         # add pipe between log streamer and application read streamer
@@ -90,9 +90,9 @@ def test_catch_broken_queue_error(event_loop: AbstractEventLoop) -> None:
 def test_delete_internal_task(event_loop: AbstractEventLoop) -> None:
     """test for deleting log queue when read queue is awaiting streaming data from log queue"""
     logstreamer = ToyLogStreamer([log_streamer.QueueHandler()])
-    read_streamer = LocalReadStremaer(logstreamer)
+    read_streamer = LocalReadStreamer(logstreamer)
 
-    async def flow(read_streamer: LocalReadStremaer, logstreamer: ToyLogStreamer):
+    async def flow(read_streamer: LocalReadStreamer, logstreamer: ToyLogStreamer):
         id = "xxx"
         key = "key-something"
         # add pipe between log streamer and application read streamer
@@ -120,7 +120,7 @@ def test_delete_internal_task(event_loop: AbstractEventLoop) -> None:
 @pytest.mark.timeout(10)
 def test_log_trace() -> None:
     logstreamer = ToyLogStreamer([log_streamer.QueueHandler()])
-    read_streamer = LocalReadStremaer(logstreamer)
+    read_streamer = LocalReadStreamer(logstreamer)
     app = create_app(read_streamer)
 
     async def flow(logstreamer: ToyLogStreamer) -> None:

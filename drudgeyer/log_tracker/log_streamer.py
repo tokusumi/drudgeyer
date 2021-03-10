@@ -13,6 +13,10 @@ from drudgeyer.worker.logger import LogModel, StreamingLogger
 
 
 class BaseHandler(ABC):
+    """process log streaming data from sub class of BaseLogStreamer
+    ex) dump to filesystem, send to broadcasting system and ...
+    """
+
     @abstractmethod
     async def send(self, log: LogModel) -> None:
         ...
@@ -27,6 +31,8 @@ class BaseHandler(ABC):
 
 
 class BaseLogStreamer(ABC):
+    """streaming log data from worker into handlers"""
+
     def __init__(self, handlers: List[BaseHandler]) -> None:
         self._handlers = handlers
         self.should_exit = False
@@ -70,6 +76,8 @@ class BaseLogStreamer(ABC):
 
 
 class LocalLogStreamer(BaseLogStreamer):
+    """streaming log data from worker into handlers"""
+
     def __init__(self, handlers: List[BaseHandler], logger: StreamingLogger) -> None:
         self._handlers = handlers
         self._logger = logger
@@ -109,6 +117,8 @@ class LocalQueueHandler(logging.handlers.QueueHandler):
 
 
 class QueueFileHandler(BaseHandler):
+    """save log streaming data in file from sub class of BaseLogStreamer"""
+
     def __init__(self, logdir: str = "log") -> None:
         self.logdir = logdir
         self.loggers: Dict[str, logging.Logger] = {}
@@ -160,6 +170,8 @@ class QueueFileHandler(BaseHandler):
 
 
 class QueueHandler(BaseHandler):
+    """queue log streaming data from sub class of BaseLogStreamer"""
+
     def __init__(self) -> None:
         self._queues: Dict[str, Queue[str]] = {}
 

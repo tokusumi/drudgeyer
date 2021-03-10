@@ -5,8 +5,8 @@ import typer
 
 from drudgeyer.job_scheduler.queue import QUEUE_CLASSES, Queues
 from drudgeyer.log_tracker import log_streamer
-from drudgeyer.log_tracker.receiver import (LocalReadStremaer, create_app,
-                                            run_receiver)
+from drudgeyer.log_tracker.broadcasting import (LocalReadStreamer, create_app,
+                                                run_receiver)
 from drudgeyer.worker.logger import LOGGER_CLASSES, Loggers, StreamingLogger
 from drudgeyer.worker.shell import Worker
 
@@ -46,7 +46,7 @@ def main(
             log_streamer_ = log_streamer.LocalLogStreamer(
                 [log_streamer.QueueFileHandler(), log_streamer_handler], logger_
             )
-            read_streamer = LocalReadStremaer(log_streamer_)
+            read_streamer = LocalReadStreamer(log_streamer_)
 
             app = create_app(read_streamer)
             server = run_receiver(

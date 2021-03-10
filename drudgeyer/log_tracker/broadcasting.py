@@ -17,6 +17,8 @@ from drudgeyer.log_tracker.log_streamer import BaseLogStreamer, QueueHandler
 
 
 class BaseReadStreamer(ABC):
+    """streaming log data from queue handler in log_streamer"""
+
     @abstractmethod
     async def get(self, key: str) -> str:
         ...
@@ -32,7 +34,7 @@ class BaseReadStreamer(ABC):
 
 @dataclass
 class ReadQueue:
-    """Queue for each client in application"""
+    """Queue each client for broadcasting"""
 
     key: str
     target: str
@@ -42,7 +44,7 @@ class ReadQueue:
 
 @dataclass
 class LogQueue:
-    """Queue in LogStreamer"""
+    """Queue streaming log data from LogStreamer"""
 
     id: str
     targets: Set[str]
@@ -51,7 +53,9 @@ class LogQueue:
     task: Optional["asyncio.Task[None]"] = None
 
 
-class LocalReadStremaer(BaseReadStreamer):
+class LocalReadStreamer(BaseReadStreamer):
+    """streaming log data from queue handler in log_streamer"""
+
     def __init__(
         self, log_streamer: BaseLogStreamer, loop: Optional[AbstractEventLoop] = None
     ):
@@ -157,6 +161,8 @@ class LocalReadStremaer(BaseReadStreamer):
 
 
 class GetReadStreamer:
+    """Helper class for streaming log data for broadcasting with websocket"""
+
     def __init__(self, key: str, streamer: BaseReadStreamer, ws: WebSocket):
         self._streamer = streamer
         self._key = key
@@ -185,6 +191,8 @@ def streamer(
     async def _streamer(
         ws: WebSocket, id: str
     ) -> AsyncGenerator[GetReadStreamer, None]:
+        """Dependency function for ReadStreamer."""
+        # prepare streamer
         await ws.accept()
         key = ws.headers.get("sec-websocket-key")
         await read_streamer.add_client(id, key)
@@ -192,8 +200,10 @@ def streamer(
         get_read_streamer = GetReadStreamer(key, read_streamer, ws)
 
         try:
+            # start broadcasting
             yield get_read_streamer
         finally:
+            # cleanup streamer
             await read_streamer.delete(key)
 
     return _streamer
