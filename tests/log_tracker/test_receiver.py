@@ -4,9 +4,9 @@ from asyncio import AbstractEventLoop
 import pytest
 from fastapi.testclient import TestClient
 
-from drudgeyer.tools import log_streamer
+from drudgeyer.log_tracker import log_streamer
+from drudgeyer.log_tracker.receiver import LocalReadStremaer, create_app
 from drudgeyer.worker.logger import LogModel
-from drudgeyer.tools.receiver import LocalReadStremaer, create_app
 
 
 class ToyLogStreamer(log_streamer.BaseLogStreamer):

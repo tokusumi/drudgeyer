@@ -13,7 +13,7 @@ from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from uvicorn import Config, Server  # type: ignore
 
-from drudgeyer.tools.log_streamer import BaseLogStreamer, QueueHandler
+from drudgeyer.log_tracker.log_streamer import BaseLogStreamer, QueueHandler
 
 
 class BaseReadStreamer(ABC):

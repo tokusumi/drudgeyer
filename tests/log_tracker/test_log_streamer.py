@@ -6,7 +6,7 @@ from signal import SIGINT
 
 import pytest
 
-from drudgeyer.tools import log_streamer
+from drudgeyer.log_tracker import log_streamer
 from drudgeyer.worker.logger import LogModel, StreamingLogger
 
 
