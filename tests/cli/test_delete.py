@@ -4,9 +4,9 @@ import tempfile
 import typer
 from typer.testing import CliRunner
 
-from drudgeyer.add import main as add_main
-from drudgeyer.delete import main
-from drudgeyer.show import main as list_main
+from drudgeyer.cli.add import main as add_main
+from drudgeyer.cli.delete import main
+from drudgeyer.cli.show import main as list_main
 
 app = typer.Typer()
 app.command("delete")(main)

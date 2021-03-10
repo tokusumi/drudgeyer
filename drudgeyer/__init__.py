@@ -1,6 +1,6 @@
 import typer
 
-from drudgeyer import add, delete, run, show
+from drudgeyer.cli import add, delete, run, show
 
 app = typer.Typer()
 app.command("run")(run.main)

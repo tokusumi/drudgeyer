@@ -5,7 +5,7 @@ from signal import Signals
 from types import FrameType
 from typing import Any, Optional
 
-from drudgeyer.tools.logger import BaseLog
+from drudgeyer.worker.logger import BaseLog
 from drudgeyer.tools.queue import BaseQueue, BaseQueueModel
 
 

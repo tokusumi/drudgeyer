@@ -3,7 +3,7 @@ from asyncio.events import AbstractEventLoop
 from pathlib import Path
 from time import sleep
 
-from drudgeyer.tools import logger
+from drudgeyer.worker import logger
 
 
 def test_print(capsys):

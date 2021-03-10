@@ -4,11 +4,10 @@ from pathlib import Path
 import typer
 
 from drudgeyer.tools import log_streamer
-from drudgeyer.tools.logger import LOGGER_CLASSES, Loggers, StreamingLogger
+from drudgeyer.worker.logger import LOGGER_CLASSES, Loggers, StreamingLogger
 from drudgeyer.tools.queue import QUEUE_CLASSES, Queues
-from drudgeyer.tools.receiver import (LocalReadStremaer, create_app,
-                                      run_receiver)
-from drudgeyer.tools.shell import Worker
+from drudgeyer.tools.receiver import LocalReadStremaer, create_app, run_receiver
+from drudgeyer.worker.shell import Worker
 
 
 def main(
