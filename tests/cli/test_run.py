@@ -76,7 +76,7 @@ def test_run():
     because main process is infinite loop.
     """
     # ctrl-c will be sent to terminate main process 5 sec later
-    lazy_fire_terminate_signal(5)
+    lazy_fire_terminate_signal(3)
 
     with tempfile.TemporaryDirectory() as tempdir:
 

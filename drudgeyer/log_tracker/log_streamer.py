@@ -19,15 +19,15 @@ class BaseHandler(ABC):
 
     @abstractmethod
     async def send(self, log: LogModel) -> None:
-        ...
+        ...  # pragma: no cover
 
     @abstractmethod
     async def add(self, id: str) -> None:
-        ...
+        ...  # pragma: no cover
 
     @abstractmethod
     async def delete(self, id: str) -> None:
-        ...
+        ...  # pragma: no cover
 
 
 class BaseLogStreamer(ABC):
@@ -40,11 +40,11 @@ class BaseLogStreamer(ABC):
 
     @abstractmethod
     async def recv(self) -> LogModel:
-        ...
+        ...  # pragma: no cover
 
     @abstractmethod
     async def entry_point(self) -> None:
-        ...
+        ...  # pragma: no cover
 
     async def streaming(self) -> None:
         """streaming flow in a cycle.

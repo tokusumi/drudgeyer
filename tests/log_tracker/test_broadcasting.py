@@ -131,10 +131,6 @@ def test_log_trace() -> None:
         await logstreamer.streaming()
         print("finished flow")
 
-    async def sleep(wait: float) -> None:
-        # await asyncio.sleep(wait)
-        return
-
     client = TestClient(app)
     with client.websocket_connect("/log-trace?id=xxx") as websocket:
         # running app new event loop in subthread
@@ -152,9 +148,7 @@ def test_log_trace() -> None:
         # wait closing background process
 
         print("close websocket")
-        # future = asyncio.run_coroutine_threadsafe(sleep(0.5), subloop)
-        # future.result(1)
-        # future.cancel()
+
     print("out of loop")
     # socket is closed and queues in log streamer and read streamer
     assert not logstreamer._handlers[0]._queues

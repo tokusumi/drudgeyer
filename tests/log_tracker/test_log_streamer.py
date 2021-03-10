@@ -44,6 +44,11 @@ def test_baselogstreamer(capsys, event_loop: AbstractEventLoop) -> None:
     captured = capsys.readouterr()
     assert captured.out == "toy-test\ntoy-test\n"
 
+    _streamer.delete("yyy")
+    event_loop.run_until_complete(_streamer.streaming())
+    captured = capsys.readouterr()
+    assert captured.out == "toy-test\n"
+
     _streamer = ToyLogStreamer([ToyHandler()])
     # exit mode
     _streamer.handle_exit(SIGINT, None)
@@ -105,6 +110,12 @@ def test_queuefilehandler(event_loop: AbstractEventLoop) -> None:
             assert fy.read() == "test-y\n"
         assert not (logdir / "zzz").is_file()
 
+        async def delete(handler):
+            # do nohing
+            await handler.delete("xxx")
+
+        event_loop.run_until_complete(delete(handler))
+
 
 def test_queue_handler(event_loop: AbstractEventLoop) -> None:
     handler = log_streamer.QueueHandler()
@@ -114,3 +125,12 @@ def test_queue_handler(event_loop: AbstractEventLoop) -> None:
     assert queues.get("xxx").get_nowait() == "test-x"
     assert queues.get("yyy").get_nowait() == "test-y"
     assert not queues.get("zzz")
+
+    async def delete(handler):
+        # raise
+        await handler.delete("aaa")
+        # pop successfully
+        await handler.delete("xxx")
+
+    event_loop.run_until_complete(delete(handler))
+    assert not queues.get("xxx")
