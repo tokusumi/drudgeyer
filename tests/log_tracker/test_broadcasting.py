@@ -148,7 +148,6 @@ def test_log_trace() -> None:
         # wait closing background process
 
         print("close websocket")
-
     print("out of loop")
     # socket is closed and queues in log streamer and read streamer
     assert not logstreamer._handlers[0]._queues
