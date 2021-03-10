@@ -18,6 +18,7 @@ features (in the future):
 
 * [x] Add file logger
 * [ ] Add DB (SQLite3), Redis Queue
+* [ ] Add Log tracker
 * [ ] Add registration task with dependency directory
 * [ ] Add notifier (slack, line notify, sidekiq)
 * [ ] Add documentation

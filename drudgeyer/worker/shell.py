@@ -5,8 +5,8 @@ from signal import Signals
 from types import FrameType
 from typing import Any, Optional
 
+from drudgeyer.job_scheduler.queue import BaseQueue, BaseQueueModel
 from drudgeyer.worker.logger import BaseLog
-from drudgeyer.tools.queue import BaseQueue, BaseQueueModel
 
 
 class BaseWorker(ABC):

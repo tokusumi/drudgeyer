@@ -2,7 +2,7 @@ from pathlib import Path
 
 import typer
 
-from drudgeyer.tools.queue import QUEUE_CLASSES, Queues
+from drudgeyer.job_scheduler.queue import QUEUE_CLASSES, Queues
 
 
 def main(

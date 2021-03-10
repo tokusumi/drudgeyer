@@ -62,6 +62,7 @@ class FileQueue(BaseQueue):
         minn_idx = 0
         for idx, time in enumerate(times):
             if time < minn:
+                minn = time
                 minn_idx = idx
         target = files[minn_idx]
         with target.open() as f:

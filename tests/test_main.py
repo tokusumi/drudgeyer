@@ -1,4 +1,3 @@
-import pytest
 from typer.testing import CliRunner
 
 from drudgeyer import app
@@ -6,7 +5,6 @@ from drudgeyer import app
 runner = CliRunner()
 
 
-@pytest.mark.cli
 def test_app():
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0, result.stdout

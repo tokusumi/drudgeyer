@@ -5,7 +5,7 @@ from typing import List
 
 import pytest
 
-from drudgeyer.tools.queue import BaseQueueModel, FileQueue
+from drudgeyer.job_scheduler.queue import BaseQueueModel, FileQueue
 
 
 def assert_items(expected: List[str], items: List[BaseQueueModel]) -> bool:

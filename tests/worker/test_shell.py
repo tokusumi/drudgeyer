@@ -4,8 +4,8 @@ from typing import Any, Callable, Optional, Type
 
 import pytest
 
+from drudgeyer.job_scheduler.queue import BaseQueueModel
 from drudgeyer.worker.logger import BaseLog
-from drudgeyer.tools.queue import BaseQueueModel
 from drudgeyer.worker.shell import BaseWorker, Worker
 
 
