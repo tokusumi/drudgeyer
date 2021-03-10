@@ -2,7 +2,7 @@ import tempfile
 from pathlib import Path
 from time import sleep
 
-from drudgeyer.tools.logger import PrintLogger, QueueFileLogger
+from drudgeyer.worker.logger import PrintLogger, QueueFileLogger
 
 
 def test_print(capsys):
