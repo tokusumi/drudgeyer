@@ -4,9 +4,9 @@ from typing import Any, Callable, Optional, Type
 
 import pytest
 
-from drudgeyer.tools.logger import BaseLog
+from drudgeyer.worker.logger import BaseLog
 from drudgeyer.tools.queue import BaseQueueModel
-from drudgeyer.tools.shell import BaseWorker, Worker
+from drudgeyer.worker.shell import BaseWorker, Worker
 
 
 class ValidDequeueTerminateRun(BaseWorker):

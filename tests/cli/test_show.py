@@ -3,8 +3,8 @@ import tempfile
 import typer
 from typer.testing import CliRunner
 
-from drudgeyer.add import main as add_main
-from drudgeyer.show import main
+from drudgeyer.cli.add import main as add_main
+from drudgeyer.cli.show import main
 
 app = typer.Typer()
 app.command("list")(main)

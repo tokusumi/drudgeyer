@@ -10,7 +10,7 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
-from drudgeyer.run import main
+from drudgeyer.cli.run import main
 
 app = typer.Typer()
 app.command()(main)

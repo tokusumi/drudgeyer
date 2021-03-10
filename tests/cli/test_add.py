@@ -3,7 +3,7 @@ import tempfile
 import typer
 from typer.testing import CliRunner
 
-from drudgeyer.add import main
+from drudgeyer.cli.add import main
 
 app = typer.Typer()
 app.command()(main)
