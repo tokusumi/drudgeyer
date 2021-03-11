@@ -1,21 +1,20 @@
 import asyncio
 
-import aiohttp
 import typer
+import websockets
 
 
-async def entry_point(url: str) -> None:
-    async with aiohttp.ClientSession() as session:
-        async with session.ws_connect(url) as ws:
-            async for msg in ws:
-                if msg.type == aiohttp.WSMsgType.TEXT:
-                    if msg.data == "close cmd":
-                        await ws.close()
-                        return
-                    else:
-                        typer.echo(msg.data)
-                elif msg.type == aiohttp.WSMsgType.ERROR:
-                    return
+async def entry_point(uri: str) -> None:
+    try:
+        async with websockets.connect(uri) as websocket:
+            async for msg in websocket:
+                typer.echo(msg)
+    except websockets.ConnectionClosedError:
+        typer.secho("Connection closed", fg=typer.colors.RED)
+    except OSError:
+        typer.secho("not found", fg=typer.colors.RED)
+    except Exception as e:
+        typer.secho(str(e), fg=typer.colors.RED)
 
 
 def main(
