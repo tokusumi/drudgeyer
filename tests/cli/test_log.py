@@ -13,6 +13,6 @@ runner = CliRunner()
 @pytest.mark.timeout(0.1)
 def test_not_found():
     id = "xxx"
-    uri = "111://"
+    uri = "example..com"
     result = runner.invoke(app, [id, uri])
     assert result.exit_code == 1, result.stdout
