@@ -70,34 +70,36 @@ class QueueFileLogger(BaseLog):
 
     def reset(self, id: str, command: str, logdir: str = "log") -> None:
         self.set_handler(id, logdir=logdir)
-        self._setup_logging_queue()
-        self.logger = logging.getLogger()
+        self._setup_logging_queue(id)
+        self.logger = logging.getLogger(id)
         self._log = self.logger.info
         super().reset(id, command)
 
     def set_handler(self, id: str, logdir: str = "log") -> None:
-        root = logging.getLogger()
-        root.setLevel(logging.INFO)
+        logger = logging.getLogger(id)
+        logger.setLevel(logging.INFO)
 
-        path = Path(logdir) / id
-        path.touch(exist_ok=True)
+        path = Path(logdir)
+        path.mkdir(exist_ok=True)
+        path = path / id
+        path.touch(exist_ok=False)
         handler = logging.FileHandler(path.resolve())
         handler.setLevel(logging.INFO)
         formatter = logging.Formatter("%(message)s")
         handler.setFormatter(formatter)
-        root.addHandler(handler)
+        logger.addHandler(handler)
 
-    def _setup_logging_queue(self) -> None:
+    def _setup_logging_queue(self, id: str) -> None:
         """Move log handlers to a separate thread"""
         handlers: List[logging.Handler] = []
         queue: Queue[logging.LogRecord] = Queue()
         handler = LocalQueueHandler(queue)
 
-        root = logging.getLogger()
-        root.addHandler(handler)
-        for h in root.handlers[:]:
+        logger = logging.getLogger(id)
+        logger.addHandler(handler)
+        for h in logger.handlers[:]:
             if h is not handler:
-                root.removeHandler(h)
+                logger.removeHandler(h)
                 handlers.append(h)
 
         listener = logging.handlers.QueueListener(

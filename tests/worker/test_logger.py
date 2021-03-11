@@ -17,10 +17,10 @@ def test_filelogger():
     logger_ = logger.QueueFileLogger()
     with tempfile.TemporaryDirectory() as f:
         path = Path(f)
-        logger_.reset("xxx", "xxx", logdir=path.resolve())
+        logger_.reset("xxx-test-file-logger", "xxx", logdir=path.resolve())
         logger_.log("test")
 
-        log = path / "xxx"
+        log = path / "xxx-test-file-logger"
         sleep(0.1)
         with log.open() as f:
             assert "test\n" == f.readlines()[-1]
