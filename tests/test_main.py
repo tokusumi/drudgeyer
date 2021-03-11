@@ -20,3 +20,6 @@ def test_app():
 
     result = runner.invoke(app, ["delete", "--help"])
     assert result.exit_code == 0, result.stdout
+
+    result = runner.invoke(app, ["log", "--help"])
+    assert result.exit_code == 0, result.stdout
