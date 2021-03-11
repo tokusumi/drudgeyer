@@ -76,8 +76,8 @@ class LocalReadStreamer(BaseReadStreamer):
                 try:
                     if not log_queue.task.cancelled():
                         log_queue.task.cancel()
-                except asyncio.CancelledError as e:
-                    print(e)
+                except asyncio.CancelledError:
+                    pass
 
     async def entry_point(self, log_queue: LogQueue) -> None:
         # possibly bottle neck
@@ -104,8 +104,7 @@ class LocalReadStreamer(BaseReadStreamer):
         try:
             log = await queue.queue.get()
             return log
-        except (RuntimeError, asyncio.CancelledError) as e:
-            print(e)
+        except (RuntimeError, asyncio.CancelledError):
             queue.live = False
         raise ValueError("broken connection. try again")
 

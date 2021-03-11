@@ -38,7 +38,6 @@ def test_localread_streamer(event_loop: AbstractEventLoop) -> None:
         await asyncio.sleep(0.01)
 
         # read streamer is collectting streaming data asynchronously
-        print("start getting")
 
         # read streamer get log
         out = await read_streamer.get(key)
@@ -129,7 +128,6 @@ def test_log_trace() -> None:
         logstreamer.add("xxx")
         await logstreamer.streaming()
         await logstreamer.streaming()
-        print("finished flow")
 
     client = TestClient(app)
     with client.websocket_connect("/log-trace?id=xxx") as websocket:
@@ -147,8 +145,6 @@ def test_log_trace() -> None:
         websocket.close()
         # wait closing background process
 
-        print("close websocket")
-    print("out of loop")
     # socket is closed and queues in log streamer and read streamer
     assert not logstreamer._handlers[0]._queues
     assert not read_streamer._key_to_readqueue

@@ -19,7 +19,7 @@ class ToyReadStreamer(BaseReadStreamer):
             self.id_cnt[id] += 1
             return f"key: {key}. id: {id}. cnt: {self.id_cnt[id]}. tot: {len(self.key_to_id)}"
         except (RuntimeError, asyncio.CancelledError) as e:
-            print(e)
+            pass
         raise ValueError("broken connection. try again")
 
     async def add_client(self, id: str, key: str) -> None:
