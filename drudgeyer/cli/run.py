@@ -5,8 +5,11 @@ import typer
 
 from drudgeyer.job_scheduler.queue import QUEUE_CLASSES, Queues
 from drudgeyer.log_tracker import log_streamer
-from drudgeyer.log_tracker.broadcasting import (LocalReadStreamer, create_app,
-                                                run_receiver)
+from drudgeyer.log_tracker.broadcasting import (
+    LocalReadStreamer,
+    create_app,
+    run_receiver,
+)
 from drudgeyer.worker.logger import LOGGER_CLASSES, Loggers, StreamingLogger
 from drudgeyer.worker.shell import Worker
 
