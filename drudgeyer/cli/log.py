@@ -29,3 +29,4 @@ def main(
     url = f"ws://{url}/log-trace?id={id}"
     loop = asyncio.get_event_loop()
     loop.run_until_complete(entry_point(url))
+    raise typer.Exit(1)
