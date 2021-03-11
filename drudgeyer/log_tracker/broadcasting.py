@@ -21,15 +21,15 @@ class BaseReadStreamer(ABC):
 
     @abstractmethod
     async def get(self, key: str) -> str:
-        ...
+        ...  # pragma: no cover
 
     @abstractmethod
     async def add_client(self, id: str, key: str) -> None:
-        ...
+        ...  # pragma: no cover
 
     @abstractmethod
     async def delete(self, key: str) -> None:
-        ...
+        ...  # pragma: no cover
 
 
 @dataclass
