@@ -4,6 +4,7 @@ import tempfile
 import threading
 import time
 from asyncio.events import AbstractEventLoop
+from pathlib import Path
 from signal import SIGINT
 
 import pytest
@@ -70,7 +71,7 @@ def test_override_signal_but_timeout_works(event_loop: AbstractEventLoop) -> Non
 
 
 @pytest.mark.timeout(20)
-def test_run():
+def test_run(mocker):
     """For testing ctrl-c successfully works for the app
     NOTE: this test will be automatically failed 20 sec later,
     because main process is infinite loop.
@@ -79,7 +80,8 @@ def test_run():
     lazy_fire_terminate_signal(5)
 
     with tempfile.TemporaryDirectory() as tempdir:
+        mocker.patch("drudgeyer.cli.run.BASEDIR", Path(tempdir))
 
         # running main process (inspect queue, handle worker and ...)
-        result = runner.invoke(app, ["-d", tempdir])
+        result = runner.invoke(app, [])
         assert result.exit_code == 0, result.stdout

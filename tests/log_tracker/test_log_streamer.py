@@ -99,6 +99,7 @@ async def workflow(handler: log_streamer.BaseHandler) -> None:
 
 
 def test_queuefilehandler(event_loop: AbstractEventLoop) -> None:
+    """NOTE: QueueFileHandler add automatically if log is sent"""
     with tempfile.TemporaryDirectory() as f:
         logdir = Path(f) / "log"
         handler = log_streamer.QueueFileHandler(str(logdir.resolve()))
@@ -108,7 +109,8 @@ def test_queuefilehandler(event_loop: AbstractEventLoop) -> None:
             assert fx.read() == "test-x\n"
         with (logdir / "yyy").open() as fy:
             assert fy.read() == "test-y\n"
-        assert not (logdir / "zzz").is_file()
+        with (logdir / "zzz").open() as fz:
+            assert fz.read() == "test-z\n"
 
         async def delete(handler):
             # do nohing
