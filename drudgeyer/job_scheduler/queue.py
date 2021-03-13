@@ -45,10 +45,10 @@ class FileQueue(BaseQueue):
         self.done = path / "done"
 
         if not path.is_dir():
-            path.mkdir(exist_ok=True)
+            path.mkdir(parents=True, exist_ok=True)
 
         if not self.done.is_dir():
-            self.done.mkdir(exist_ok=True)
+            self.done.mkdir(parents=True, exist_ok=True)
 
         self.depends = depends
 

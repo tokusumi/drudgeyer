@@ -1,7 +1,6 @@
-from pathlib import Path
-
 import typer
 
+from drudgeyer.cli import BASEDIR
 from drudgeyer.job_scheduler.dependency import CopyDep
 from drudgeyer.job_scheduler.queue import QUEUE_CLASSES, Queues
 
@@ -14,10 +13,8 @@ def main(
     - on-premise: Access with Queue directly
     - cloud (future): send string of command and zip file of dependencies
     """
-    basedir = Path(".drudgeyer")
-
-    dep = CopyDep(None, basedir / "dep")
-    queue_ = QUEUE_CLASSES[queue](path=basedir / "queue", depends=dep)
+    dep = CopyDep(None, BASEDIR / "dep")
+    queue_ = QUEUE_CLASSES[queue](path=BASEDIR / "queue", depends=dep)
 
     items = queue_.list()
     if not items:

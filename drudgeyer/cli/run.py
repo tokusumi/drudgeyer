@@ -1,8 +1,8 @@
 import asyncio
-from pathlib import Path
 
 import typer
 
+from drudgeyer.cli import BASEDIR
 from drudgeyer.job_scheduler.dependency import CopyDep
 from drudgeyer.job_scheduler.queue import QUEUE_CLASSES, Queues
 from drudgeyer.log_tracker import log_streamer
@@ -17,9 +17,6 @@ from drudgeyer.worker.shell import Worker
 
 def main(
     http: bool = typer.Option(True, "-h", help="connect via http"),
-    directory: Path = typer.Option(
-        Path("./storage"), "-d", "--dir", help="directory for dependencies"
-    ),
     queue: Queues = typer.Option("file", "-q", help="select queue"),
     logger: Loggers = typer.Option("stream", "-l", help="select logger"),
     streamer: log_streamer.LogStreamers = typer.Option(
@@ -33,10 +30,9 @@ def main(
     - Worker: run or wait worker subprocess for the latest job in queue, including logging.
     - Queue: CRUD for Queue (add job, get jobs, ...)
     """
-    basedir = Path(".drudgeyer")
 
-    dep = CopyDep(None, basedir / "dep")
-    queue_ = QUEUE_CLASSES[queue](path=basedir / "queue", depends=dep)
+    dep = CopyDep(None, BASEDIR / "dep")
+    queue_ = QUEUE_CLASSES[queue](path=BASEDIR / "queue", depends=dep)
 
     logger_ = LOGGER_CLASSES[logger]()
 
@@ -53,7 +49,7 @@ def main(
         ):
             log_streamer_ = log_streamer.LocalLogStreamer(
                 [
-                    log_streamer.QueueFileHandler(str(basedir / "log")),
+                    log_streamer.QueueFileHandler(str(BASEDIR / "log")),
                     log_streamer_handler,
                 ],
                 logger_,

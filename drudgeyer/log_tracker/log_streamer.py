@@ -121,6 +121,10 @@ class QueueFileHandler(BaseHandler):
 
     def __init__(self, logdir: str = "log") -> None:
         self.logdir = logdir
+        _logdir = Path(logdir)
+        if not _logdir.is_dir():
+            _logdir.mkdir(parents=True, exist_ok=True)
+
         self.loggers: Dict[str, logging.Logger] = {}
 
     async def send(self, log: LogModel) -> None:

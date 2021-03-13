@@ -2,6 +2,7 @@ from pathlib import Path
 
 import typer
 
+from drudgeyer.cli import BASEDIR
 from drudgeyer.job_scheduler.dependency import CopyDep
 from drudgeyer.job_scheduler.queue import QUEUE_CLASSES, Queues
 
@@ -22,10 +23,8 @@ def main(
         typer.secho("Invalid command", fg=typer.colors.RED)
         raise typer.Abort()
 
-    basedir = Path(".drudgeyer")
-
-    dep = CopyDep(directory, basedir / "dep")
-    queue_ = QUEUE_CLASSES[queue](path=basedir / "queue", depends=dep)
+    dep = CopyDep(directory, BASEDIR / "dep")
+    queue_ = QUEUE_CLASSES[queue](path=BASEDIR / "queue", depends=dep)
 
     queue_.enqueue(command)
     typer.secho(f"Queued: {command}", fg=typer.colors.CYAN)
