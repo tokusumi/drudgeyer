@@ -1,3 +1,4 @@
+import os
 import tempfile
 from pathlib import Path
 
@@ -16,6 +17,16 @@ def test_add(mocker):
         mocker.patch("drudgeyer.cli.add.BASEDIR", Path(tempdir))
         result = runner.invoke(app, ["echo 111"])
         assert result.exit_code == 0, result.stdout
+
+        # with dependencies
+        with tempfile.TemporaryDirectory() as tempsrcdir:
+            srcdir = Path(tempsrcdir)
+            (srcdir / "a.txt").touch()
+            result = runner.invoke(app, ["echo 111", "-d", tempsrcdir])
+
+            assert result.exit_code == 0, result.stdout
+            id = os.listdir(Path(tempdir) / "dep")[0]
+            assert (Path(tempdir) / "dep" / id / srcdir.name / "a.txt").is_file()
 
 
 def test_add_failed(mocker):

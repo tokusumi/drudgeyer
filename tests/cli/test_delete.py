@@ -48,6 +48,33 @@ def test_delete(mocker):
         parsed = [f.strip("()") for f in parsed]
         assert target not in parsed
 
+        # with dependencies
+        with tempfile.TemporaryDirectory() as tempsrcdir:
+            srcdir = Path(tempsrcdir)
+            (srcdir / "a.txt").touch()
+            result = runner.invoke(app, ["echo 111", "-d", tempsrcdir])
+
+            # query task ids
+            result = runner.invoke(app, ["list"])
+            assert result.exit_code == 0, result.stdout
+
+            assert len(result.stdout.split("\n")) > 2, result.stdout
+
+            parsed = re.findall(r"\([0-9\-]+\)", result.stdout)
+            parsed = [f.strip("()") for f in parsed]
+
+            # delete task
+            target = parsed[-1]
+            result = runner.invoke(app, ["delete", target])
+            assert result.exit_code == 0, result.stdout
+
+            result = runner.invoke(app, ["list"])
+            assert result.exit_code == 0, result.stdout
+            parsed = re.findall(r"\([0-9\-]+\)", result.stdout)
+            parsed = [f.strip("()") for f in parsed]
+            assert target not in parsed
+            assert not (Path(tempdir) / "dep" / target).is_dir()
+
 
 def test_delete_failed(mocker):
     with tempfile.TemporaryDirectory() as tempdir:
