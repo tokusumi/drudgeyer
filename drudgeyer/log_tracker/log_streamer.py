@@ -125,10 +125,17 @@ class QueueFileHandler(BaseHandler):
 
     async def send(self, log: LogModel) -> None:
         logger = self.loggers.get(log.id)
+        if not logger:
+            await self.add(log.id)
+            logger = self.loggers.get(log.id)
+
         if logger:
             logger.info(log.log)
 
     async def add(self, id: str) -> None:
+        if self.loggers.get(id):
+            return
+
         self.set_handler(id, logdir=self.logdir)
         self._setup_logging_queue(id)
         self.loggers[id] = logging.getLogger(id)
