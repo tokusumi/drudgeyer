@@ -136,3 +136,5 @@ done/
 storage/
 commands/
 log
+.drudgeyer/
+src/

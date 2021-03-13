@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
@@ -6,11 +7,14 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
 from pydantic import BaseModel
 
+from drudgeyer.job_scheduler.dependency import BaseDep
+
 
 class BaseQueueModel(BaseModel):
     id: str
     order: int
     command: str
+    workdir: Path = Path("")
 
 
 if TYPE_CHECKING:
@@ -21,7 +25,7 @@ if TYPE_CHECKING:
 
 class BaseQueue(ABC):
     # fmt: off
-    def __init__(self, path: Path) -> None: ...  # pragma: no cover
+    def __init__(self, path: Path, depends: BaseDep) -> None: ...  # pragma: no cover
     @abstractmethod
     def dequeue(self) -> Optional[BaseQueueModel]: ...  # pragma: no cover
     @abstractmethod
@@ -34,7 +38,9 @@ class BaseQueue(ABC):
 
 
 class FileQueue(BaseQueue):
-    def __init__(self, path: Path = Path("storage")) -> None:
+    def __init__(
+        self, path: Path = Path("storage"), depends: Optional[BaseDep] = None
+    ) -> None:
         self.path = path
         self.done = path / "done"
 
@@ -44,11 +50,19 @@ class FileQueue(BaseQueue):
         if not self.done.is_dir():
             self.done.mkdir(exist_ok=True)
 
+        self.depends = depends
+
     def enqueue(self, cmd: str) -> None:
         now = datetime.now()
-        file = self.path / now.strftime("%Y-%m-%d-%H-%M-%S-%f")
+        id = now.strftime("%Y-%m-%d-%H-%M-%S-%f")
+        file = self.path / id
         if file.is_file():
             self.enqueue(cmd)
+
+        if self.depends:
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(self.depends.dump(id))
+
         with file.open("w") as f:
             f.write(cmd)
 
@@ -68,7 +82,12 @@ class FileQueue(BaseQueue):
         with target.open() as f:
             cmd = f.read()
         target.rename(self.done.resolve() / target.name)
-        return BaseQueueModel(id=target.name, command=cmd, order=0)
+
+        if self.depends:
+            workdir = self.depends.workdir(target.name)
+        else:
+            workdir = Path("")
+        return BaseQueueModel(id=target.name, command=cmd, order=0, workdir=workdir)
 
     def list(self) -> List[BaseQueueModel]:
         files = list(self.path.glob("*-*-*-*-*-*-*"))
@@ -83,9 +102,15 @@ class FileQueue(BaseQueue):
         out = []
         for order, (idx, file) in enumerate(times):
             target = files[idx]
+            if self.depends:
+                workdir = self.depends.workdir(target.name)
+            else:
+                workdir = Path("")
             with target.open() as f:
                 out.append(
-                    BaseQueueModel(id=target.name, order=order, command=f.read())
+                    BaseQueueModel(
+                        id=target.name, order=order, command=f.read(), workdir=workdir
+                    )
                 )
         return out
 
@@ -94,6 +119,9 @@ class FileQueue(BaseQueue):
         if not target.is_file():
             raise FileNotFoundError
         target.unlink()
+        if self.depends:
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(self.depends.clear(id))
 
 
 class Queues(Enum):

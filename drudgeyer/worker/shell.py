@@ -61,12 +61,10 @@ class Worker(BaseWorker):
             return
 
         command = task.command
+        cwd = task.workdir
         try:
             process = await create_subprocess_shell(
-                command,
-                stdout=PIPE,
-                stderr=STDOUT,
-                loop=loop,
+                command, stdout=PIPE, stderr=STDOUT, loop=loop, cwd=cwd
             )
             if process.stdout:
                 asyncio.create_task(self._logger._output(process.stdout))

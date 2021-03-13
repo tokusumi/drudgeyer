@@ -3,6 +3,7 @@ from pathlib import Path
 
 import typer
 
+from drudgeyer.job_scheduler.dependency import CopyDep
 from drudgeyer.job_scheduler.queue import QUEUE_CLASSES, Queues
 from drudgeyer.log_tracker import log_streamer
 from drudgeyer.log_tracker.broadcasting import (
@@ -32,7 +33,11 @@ def main(
     - Worker: run or wait worker subprocess for the latest job in queue, including logging.
     - Queue: CRUD for Queue (add job, get jobs, ...)
     """
-    queue_ = QUEUE_CLASSES[queue](directory)
+    basedir = Path(".drudgeyer")
+
+    dep = CopyDep(None, basedir / "dep")
+    queue_ = QUEUE_CLASSES[queue](path=basedir / "queue", depends=dep)
+
     logger_ = LOGGER_CLASSES[logger]()
 
     loop = asyncio.get_event_loop()
@@ -47,7 +52,11 @@ def main(
             logger_, StreamingLogger
         ):
             log_streamer_ = log_streamer.LocalLogStreamer(
-                [log_streamer.QueueFileHandler(), log_streamer_handler], logger_
+                [
+                    log_streamer.QueueFileHandler(str(basedir / "log")),
+                    log_streamer_handler,
+                ],
+                logger_,
             )
             read_streamer = LocalReadStreamer(log_streamer_)
 
