@@ -29,7 +29,7 @@ class BaseQueue(ABC):
     @abstractmethod
     def dequeue(self) -> Optional[BaseQueueModel]: ...  # pragma: no cover
     @abstractmethod
-    def enqueue(self, cmd: str) -> None: ...  # pragma: no cover
+    def enqueue(self, cmd: str) -> BaseQueueModel: ...  # pragma: no cover
     @abstractmethod
     def list(self) -> List[BaseQueueModel]: ...  # pragma: no cover
     @abstractmethod
@@ -52,7 +52,7 @@ class FileQueue(BaseQueue):
 
         self.depends = depends
 
-    def enqueue(self, cmd: str) -> None:
+    def enqueue(self, cmd: str) -> BaseQueueModel:
         now = datetime.now()
         id = now.strftime("%Y-%m-%d-%H-%M-%S-%f")
         file = self.path / id
@@ -62,9 +62,16 @@ class FileQueue(BaseQueue):
         if self.depends:
             loop = asyncio.get_event_loop()
             loop.run_until_complete(self.depends.dump(id))
+            workdir = self.depends.workdir(id)
+        else:
+            workdir = Path("")
 
         with file.open("w") as f:
             f.write(cmd)
+
+        order = len(list(file.glob("*-*-*-*-*-*-*")))
+
+        return BaseQueueModel(id=id, command=cmd, order=order, workdir=workdir)
 
     def dequeue(self) -> Optional[BaseQueueModel]:
         files = list(self.path.glob("*-*-*-*-*-*-*"))

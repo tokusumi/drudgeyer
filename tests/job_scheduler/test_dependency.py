@@ -35,7 +35,7 @@ async def test_copydep():
 
         # get working directory to execute command
         workdir = dep.workdir("xxx")
-        assert workdir == (path / "xxx")
+        assert workdir == (path / "xxx" / "src")
 
         # delete dependency
         await dep.clear("xxx")

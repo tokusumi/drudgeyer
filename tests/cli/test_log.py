@@ -51,7 +51,7 @@ class DummyWebSocketClientProtcol:
 @pytest.mark.asyncio
 async def test_websockets_mock(mocker, capsys):
     websocket = mocker.patch("websockets.connect")
-    dummy_resp = "test"
+    dummy_resp = "test\n"
     repeat = 2
     websocket.return_value = DummyWebSocketClientProtcol(dummy_resp, repeat)
     await entry_point("")
@@ -62,7 +62,7 @@ async def test_websockets_mock(mocker, capsys):
 @pytest.mark.asyncio
 async def test_websockets_closed(mocker, capsys):
     websocket = mocker.patch("websockets.connect")
-    dummy_resp = "test"
+    dummy_resp = "test\n"
     repeat = 0
     exception = websockets.ConnectionClosedError(1008, "")
     websocket.return_value = DummyWebSocketClientProtcol(dummy_resp, repeat, exception)
@@ -74,7 +74,7 @@ async def test_websockets_closed(mocker, capsys):
 @pytest.mark.asyncio
 async def test_websockets_not_found(mocker, capsys):
     websocket = mocker.patch("websockets.connect")
-    dummy_resp = "test"
+    dummy_resp = "test\n"
     repeat = 0
     exception = OSError
     websocket.return_value = DummyWebSocketClientProtcol(dummy_resp, repeat, exception)
@@ -86,7 +86,7 @@ async def test_websockets_not_found(mocker, capsys):
 @pytest.mark.asyncio
 async def test_websockets_exception(mocker):
     websocket = mocker.patch("websockets.connect")
-    dummy_resp = "test"
+    dummy_resp = "test\n"
     repeat = 0
     exception = Exception
     websocket.return_value = DummyWebSocketClientProtcol(dummy_resp, repeat, exception)

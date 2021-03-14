@@ -1,7 +1,11 @@
+import asyncio
 import tempfile
 from asyncio.events import AbstractEventLoop
+from asyncio.subprocess import PIPE, STDOUT
 from pathlib import Path
 from time import sleep
+
+import pytest
 
 from drudgeyer.worker import logger
 
@@ -37,3 +41,34 @@ def test_streaminglogger(event_loop: AbstractEventLoop) -> None:
         assert log.id == "xxx"
 
     event_loop.run_until_complete(assert_logger(logger_))
+
+
+@pytest.mark.asyncio
+async def test_readuntil(mocker) -> None:
+    loop = asyncio.get_event_loop()
+    process = await asyncio.create_subprocess_shell(
+        "echo 111111", stdout=PIPE, stderr=STDOUT, loop=loop, limit=1
+    )
+    with pytest.raises(ValueError):
+        await logger.readuntil(process.stdout, b"")
+
+    with pytest.raises(asyncio.LimitOverrunError):
+        await logger.readuntil(process.stdout, b"\n")
+
+    await process.wait()  # 0 means success
+
+    process = await asyncio.create_subprocess_shell(
+        'echo -e "\n"', stdout=PIPE, stderr=STDOUT, loop=loop, limit=1
+    )
+    with pytest.raises(asyncio.LimitOverrunError):
+        await logger.readuntil(process.stdout, b"\n")
+
+    await process.wait()  # 0 means success
+
+    process = await asyncio.create_subprocess_shell(
+        'echo -e "\n"', stdout=PIPE, stderr=STDOUT, loop=loop, limit=1
+    )
+    with pytest.raises(ValueError):
+        await logger.readline(process.stdout)
+    await logger.readline(process.stdout)
+    await process.wait()  # 0 means success
