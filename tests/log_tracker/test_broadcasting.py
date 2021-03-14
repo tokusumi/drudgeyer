@@ -1,4 +1,5 @@
 import asyncio
+import tempfile
 from asyncio import AbstractEventLoop
 
 import pytest
@@ -10,8 +11,11 @@ from drudgeyer.worker.logger import LogModel
 
 
 class ToyLogStreamer(log_streamer.BaseLogStreamer):
+    msg: str = "test\n"
+    id: str = "xxx"
+
     async def recv(self) -> LogModel:
-        return LogModel(id="xxx", log="test")
+        return LogModel(id=self.id, log=self.msg)
 
     async def entry_point(self) -> None:
         ...  # pragma: no cover
@@ -41,7 +45,7 @@ def test_localread_streamer(event_loop: AbstractEventLoop) -> None:
 
         # read streamer get log
         out = await read_streamer.get(key)
-        assert out == "test"
+        assert out == "test\n"
 
         # finish streaming
         await read_streamer.delete(key)
@@ -52,6 +56,26 @@ def test_localread_streamer(event_loop: AbstractEventLoop) -> None:
 
     event_loop.run_until_complete(flow())
     event_loop.close()
+
+
+@pytest.mark.asyncio
+async def test_localread_streamer_failure():
+    # QueueFileHandler is required
+    logstreamer = ToyLogStreamer([])
+    with pytest.raises(ValueError):
+        LocalReadStreamer(logstreamer)
+
+    logstreamer = ToyLogStreamer([log_streamer.QueueHandler()])
+    read_streamer = LocalReadStreamer(logstreamer)
+    id = "xxx"
+    key = "key-something"
+    # add pipe between log streamer and application read streamer
+
+    await read_streamer.add_client(id, key)
+    # broken connection, can't get anymore
+    read_streamer._key_to_readqueue.get(key).live = False
+    with pytest.raises(ValueError):
+        await read_streamer.get(key)
 
 
 @pytest.mark.timeout(1)
@@ -141,10 +165,57 @@ def test_log_trace() -> None:
 
         # successfully log tracked
         data = websocket.receive_text()
-        assert data == "test"
+        assert data == "test\n"
         websocket.close()
         # wait closing background process
 
     # socket is closed and queues in log streamer and read streamer
     assert not logstreamer._handlers[0]._queues
     assert not read_streamer._key_to_readqueue
+
+
+@pytest.mark.timeout(1)
+@pytest.mark.asyncio
+async def test_preload():
+    with tempfile.TemporaryDirectory() as tempdir:
+        logstreamer = ToyLogStreamer(
+            [log_streamer.QueueHandler(), log_streamer.QueueFileHandler(tempdir)]
+        )
+        read_streamer = LocalReadStreamer(logstreamer)
+        id = "xxx"
+        key = "key-something-x"
+        logstreamer.id = id
+        logstreamer.msg = "test\n"
+        await logstreamer.streaming()
+        await asyncio.sleep(0.05)
+        await read_streamer.add_client(id, key)
+        data = await read_streamer.get(key)
+        assert data == "test\n\n", "additional newline is inserted"
+        data = await read_streamer.get(key)
+        assert data == "-------------- loading -------------\n"
+
+        id = "yyy"
+        key = "key-something-y"
+        logstreamer.id = id
+        logstreamer.msg = "test"
+        await logstreamer.streaming()
+        await logstreamer.streaming()
+        await asyncio.sleep(0.05)
+        await read_streamer.add_client(id, key)
+        data = await read_streamer.get(key)
+        assert data == "testtest\n", "additional newline at only eof"
+        data = await read_streamer.get(key)
+        assert data == "-------------- loading -------------\n"
+
+        id = "zzz"
+        key = "key-something-z"
+        logstreamer.id = id
+        logstreamer.msg = "test\r"
+        await logstreamer.streaming()
+        await logstreamer.streaming()
+        await asyncio.sleep(0.05)
+        await read_streamer.add_client(id, key)
+        data = await read_streamer.get(key)
+        assert data == "test\rtest\r\n", "\\r is not eliminated"
+        data = await read_streamer.get(key)
+        assert data == "-------------- loading -------------\n"

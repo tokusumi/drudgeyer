@@ -16,7 +16,7 @@ class ToyHandler(log_streamer.BaseHandler):
 
     async def send(self, log: LogModel) -> None:
         for _ in range(self.cnt):
-            print(f"toy-{log.log}")
+            print(f"toy-{log.log}", end="")
 
     async def add(self, id: str) -> None:
         self.cnt += 1
@@ -27,10 +27,16 @@ class ToyHandler(log_streamer.BaseHandler):
 
 class ToyLogStreamer(log_streamer.BaseLogStreamer):
     async def recv(self) -> LogModel:
-        return LogModel(id="xxx", log="test")
+        return LogModel(id="xxx", log="test\n")
 
     async def entry_point(self) -> None:
         ...  # pragma: no cover
+
+
+def test_capsys(capsys) -> None:
+    print("a", end="")
+    captured = capsys.readouterr()
+    assert captured.out == "a"
 
 
 def test_baselogstreamer(capsys, event_loop: AbstractEventLoop) -> None:
@@ -72,7 +78,7 @@ def test_locallogstreamer(capsys, event_loop: AbstractEventLoop) -> None:
     ) -> None:
         await asyncio.sleep(0.1)
         # logging by logger
-        logger.log("test")
+        logger.log("test\n")
         # log will be sent into streamer, and handler, then printted out
         await asyncio.sleep(0.3)
         streamer.handle_exit(SIGINT, None)
@@ -90,11 +96,11 @@ async def workflow(handler: log_streamer.BaseHandler) -> None:
     await handler.add("yyy")
 
     # written in /xxx
-    await handler.send(LogModel(id="xxx", log="test-x"))
+    await handler.send(LogModel(id="xxx", log="test-x\n"))
     # written in /yyy
-    await handler.send(LogModel(id="yyy", log="test-y"))
+    await handler.send(LogModel(id="yyy", log="test-y\n"))
     # invalid id. ignored
-    await handler.send(LogModel(id="zzz", log="test-z"))
+    await handler.send(LogModel(id="zzz", log="test-z\n"))
     await asyncio.sleep(0.3)
 
 
@@ -106,11 +112,11 @@ def test_queuefilehandler(event_loop: AbstractEventLoop) -> None:
         event_loop.run_until_complete(workflow(handler))
 
         with (logdir / "xxx").open() as fx:
-            assert fx.read() == "test-x\n"
+            assert fx.read() == "test-x\\n"
         with (logdir / "yyy").open() as fy:
-            assert fy.read() == "test-y\n"
+            assert fy.read() == "test-y\\n"
         with (logdir / "zzz").open() as fz:
-            assert fz.read() == "test-z\n"
+            assert fz.read() == "test-z\\n"
 
         async def delete(handler):
             # do nohing
@@ -124,8 +130,8 @@ def test_queue_handler(event_loop: AbstractEventLoop) -> None:
     event_loop.run_until_complete(workflow(handler))
 
     queues = handler._queues
-    assert queues.get("xxx").get_nowait() == "test-x"
-    assert queues.get("yyy").get_nowait() == "test-y"
+    assert queues.get("xxx").get_nowait() == "test-x\n"
+    assert queues.get("yyy").get_nowait() == "test-y\n"
     assert not queues.get("zzz")
 
     async def delete(handler):

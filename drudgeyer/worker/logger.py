@@ -18,11 +18,88 @@ class LogModel(BaseModel):
     log: str
 
 
+async def readuntil(self: asyncio.StreamReader, separator: bytes = b"\n") -> bytes:
+    """Read data from the stream until ``separator`` is found."""
+    separators = [separator, b"\r"]
+    seplen = len(separator)
+    if seplen == 0:
+        raise ValueError("Separator should be at least one-byte string")
+
+    if self._exception is not None:  # type: ignore
+        raise self._exception  # type: ignore
+
+    offset = 0
+    # Loop until we find `separator` in the buffer, exceed the buffer size,
+    # or an EOF has happened.
+    while True:
+        buflen = len(self._buffer)  # type: ignore
+
+        # Check if we now have enough data in the buffer for `separator` to
+        # fit.
+        if buflen - offset >= seplen:
+            for sep in separators:
+                isep = self._buffer.find(sep, offset)  # type: ignore
+
+                if isep != -1:
+                    # `separator` is in the buffer. `isep` will be used later
+                    # to retrieve the data.
+                    break
+
+            if isep != -1:
+                break
+
+            # see upper comment for explanation.
+            offset = buflen + 1 - seplen
+            if offset > self._limit:  # type: ignore
+                raise asyncio.LimitOverrunError(
+                    "Separator is not found, and chunk exceed the limit", offset
+                )
+
+        # Complete message (with full separator) may be present in buffer
+        # even when EOF flag is set. This may happen when the last chunk
+        # adds data which makes separator be found. That's why we check for
+        # EOF *ater* inspecting the buffer.
+        if self._eof:  # type: ignore
+            chunk = bytes(self._buffer)  # type: ignore
+            self._buffer.clear()  # type: ignore
+            raise asyncio.IncompleteReadError(chunk, None)
+
+        # _wait_for_data() will resume reading if stream was paused.
+        await self._wait_for_data("readuntil")  # type: ignore
+
+    if isep > self._limit:  # type: ignore
+        raise asyncio.LimitOverrunError(
+            "Separator is found, but chunk is longer than limit", isep
+        )
+
+    chunk = self._buffer[: isep + seplen]  # type: ignore
+    del self._buffer[: isep + seplen]  # type: ignore
+    self._maybe_resume_transport()  # type: ignore
+    return bytes(chunk)
+
+
+async def readline(self: asyncio.StreamReader) -> bytes:
+    sep = b"\n"
+    seplen = len(sep)
+    try:
+        line = await readuntil(self, sep)
+    except asyncio.IncompleteReadError as e:
+        return e.partial
+    except asyncio.LimitOverrunError as e:
+        if self._buffer.startswith(sep, e.consumed):  # type: ignore
+            del self._buffer[: e.consumed + seplen]  # type: ignore
+        else:
+            self._buffer.clear()  # type: ignore
+        self._maybe_resume_transport()  # type: ignore
+        raise ValueError(e.args[0])
+    return line
+
+
 class BaseLog(ABC):
     @property
     @abstractmethod
     def log(self) -> Callable[[str], Any]:
-        ...
+        ...  # pragma: no cover
 
     def reset(self, id: str, command: str) -> None:
         self.log('\nTask: "' + command + '"\n')
@@ -33,7 +110,7 @@ class BaseLog(ABC):
 
     async def _output(self, pipe: asyncio.StreamReader) -> None:
         while not pipe.at_eof():
-            line = await pipe.readline()
+            line = await readline(pipe)
             self.output(line)
 
     def exception(self, exception: BaseException) -> None:

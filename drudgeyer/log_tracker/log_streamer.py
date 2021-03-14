@@ -134,7 +134,9 @@ class QueueFileHandler(BaseHandler):
             logger = self.loggers.get(log.id)
 
         if logger:
-            logger.info(log.log)
+            # TODO: automatically store raw escape characters
+            msg = log.log.replace("\n", "\\n").replace("\r", "\\r")
+            logger.info(msg)
 
     async def add(self, id: str) -> None:
         if self.loggers.get(id):
@@ -147,6 +149,16 @@ class QueueFileHandler(BaseHandler):
     async def delete(self, id: str) -> None:
         pass
 
+    async def get_record(self, id: str) -> Optional[str]:
+        path = Path(self.logdir) / id
+        if path.is_file():
+            with path.open() as f:
+                record = f.read()
+            # TODO: automatically load raw escape characters
+            data = record.replace("\\n", "\n").replace("\\r", "\r") + "\n"
+            return data
+        return None
+
     def set_handler(self, id: str, logdir: str = "log") -> None:
         logger = logging.getLogger(id)
         logger.setLevel(logging.INFO)
@@ -155,8 +167,12 @@ class QueueFileHandler(BaseHandler):
         path.mkdir(exist_ok=True)
         path = path / id
         path.touch(exist_ok=False)
-        handler = logging.FileHandler(path.resolve())
+        handler = logging.FileHandler(
+            path.resolve(),
+            encoding="utf-8",
+        )
         handler.setLevel(logging.INFO)
+        handler.terminator = ""
         formatter = logging.Formatter("%(message)s")
         handler.setFormatter(formatter)
         logger.addHandler(handler)

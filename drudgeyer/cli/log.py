@@ -8,7 +8,7 @@ async def entry_point(uri: str) -> None:
     try:
         async with websockets.connect(uri) as websocket:
             async for msg in websocket:
-                typer.echo(msg)
+                typer.echo(msg, nl=False)
     except websockets.ConnectionClosedError:
         typer.secho("Connection closed", fg=typer.colors.RED)
     except OSError:
@@ -19,7 +19,7 @@ async def entry_point(uri: str) -> None:
 
 def main(
     id: str = typer.Argument(..., help="check task id using drudgeyer list"),
-    url: str = typer.Argument(..., help="log-tracker server URL"),
+    url: str = typer.Argument("127.0.0.1:8000", help="log-tracker server URL"),
 ) -> None:
     """Application: tracking task logs from log-tracker application
     For:

@@ -13,7 +13,11 @@ from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from uvicorn import Config, Server  # type: ignore
 
-from drudgeyer.log_tracker.log_streamer import BaseLogStreamer, QueueHandler
+from drudgeyer.log_tracker.log_streamer import (
+    BaseLogStreamer,
+    QueueFileHandler,
+    QueueHandler,
+)
 
 
 class BaseReadStreamer(ABC):
@@ -60,12 +64,18 @@ class LocalReadStreamer(BaseReadStreamer):
         self, log_streamer: BaseLogStreamer, loop: Optional[AbstractEventLoop] = None
     ):
         handler: Optional[QueueHandler] = None
+        _file: Optional[QueueFileHandler] = None
+
         for _handler in log_streamer._handlers:
             if isinstance(_handler, QueueHandler):
                 handler = _handler
+            if isinstance(_handler, QueueFileHandler):
+                _file = _handler
         if handler is None:
             raise ValueError("QueueHandler is not found")
         self.handler = handler
+        self._file = _file
+
         self._key_to_readqueue: Dict[str, ReadQueue] = {}
         self._id_to_logqueue: Dict[str, LogQueue] = {}
         self._loop = loop if loop else asyncio.get_event_loop()
@@ -114,7 +124,14 @@ class LocalReadStreamer(BaseReadStreamer):
         if read and read.target == id and read.live:
             pass
         else:
-            read = ReadQueue(key=key, target=id, queue=Queue())
+            _queue: Queue[str] = Queue()
+            if self._file:
+                _record = await self._file.get_record(id)
+                if _record:
+                    await _queue.put(_record)
+                    await _queue.put("-------------- loading -------------\n")
+
+            read = ReadQueue(key=key, target=id, queue=_queue)
             self._key_to_readqueue[key] = read
 
         # create if none
