@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 from shutil import copytree, rmtree
@@ -56,7 +57,14 @@ class CopyDep(BaseDep):
     def workdir(self, id: str) -> Path:
         if not id:
             raise ValueError()
-        return self.path / id
+        workdir = self.path / id
+        if self._target:
+            workdir = workdir / self._target.name
+        elif workdir.is_dir():
+            workdir = workdir / [f for f in os.listdir(workdir) if os.path.isdir(f)][0]
+        else:
+            workdir = Path("")
+        return workdir
 
     async def clear(self, id: str) -> None:
         if id:

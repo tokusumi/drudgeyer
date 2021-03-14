@@ -27,5 +27,8 @@ def main(
     dep = CopyDep(directory, BASEDIR / "dep")
     queue_ = QUEUE_CLASSES[queue](path=BASEDIR / "queue", depends=dep)
 
-    queue_.enqueue(command)
-    typer.secho(f"Queued: {command}", fg=typer.colors.CYAN)
+    item = queue_.enqueue(command)
+    typer.secho(
+        f"Queued:\n- Order: {item.order}\n- ID: {item.id}\n- Command: {item.command}\n- Workdir: {item.workdir}",
+        fg=typer.colors.CYAN,
+    )
