@@ -5,7 +5,7 @@ from signal import Signals
 from types import FrameType
 from typing import Any, Optional
 
-from drudgeyer.job_scheduler.queue import BaseQueue, BaseQueueModel
+from drudgeyer.job_scheduler.queue import BaseQueue, BaseQueueModel, Status
 from drudgeyer.worker.logger import BaseLog
 
 
@@ -19,7 +19,9 @@ class BaseWorker(ABC):
     @abstractmethod
     async def dequeue(self) -> Optional[BaseQueueModel]: ...  # pragma: no cover
     @abstractmethod
-    async def run(self, task: BaseQueueModel, loop: asyncio.AbstractEventLoop) -> None: ...  # pragma: no cover
+    async def worked(self, task: BaseQueueModel, status: Status) -> None: ...  # pragma: no cover
+    @abstractmethod
+    async def run(self, task: BaseQueueModel, loop: asyncio.AbstractEventLoop) -> Status: ...  # pragma: no cover
     # fmt: on
 
     async def _run(self, loop: asyncio.AbstractEventLoop) -> None:
@@ -29,7 +31,8 @@ class BaseWorker(ABC):
                 if self.should_exit:
                     return
                 if task:
-                    await self.run(task, loop)
+                    status = await self.run(task, loop)
+                    await self.worked(task, status)
                 else:
                     await asyncio.sleep(self.freq)
         except asyncio.CancelledError:
@@ -53,12 +56,17 @@ class Worker(BaseWorker):
     async def dequeue(self) -> Optional[BaseQueueModel]:
         return self._queue.dequeue()
 
-    async def run(self, task: BaseQueueModel, loop: asyncio.AbstractEventLoop) -> None:
+    async def worked(self, task: BaseQueueModel, status: Status) -> None:
+        self._queue.worked(task.id, status)
+
+    async def run(
+        self, task: BaseQueueModel, loop: asyncio.AbstractEventLoop
+    ) -> Status:
         # TODO: add safe terminate process for subprocess shell
         self._logger.reset(task.id, task.command)
 
         if self.should_exit:
-            return
+            return Status.failed
 
         command = task.command
         cwd = task.workdir
@@ -80,4 +88,6 @@ class Worker(BaseWorker):
 
         if exitcode == 0:
             # success
-            pass
+            return Status.done
+
+        return Status.failed
