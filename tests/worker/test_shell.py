@@ -1,10 +1,11 @@
+import asyncio
 from asyncio.events import AbstractEventLoop
 from signal import SIGINT
 from typing import Any, Callable, Optional, Type
 
 import pytest
 
-from drudgeyer.job_scheduler.queue import BaseQueueModel
+from drudgeyer.job_scheduler.queue import BaseQueueModel, Status
 from drudgeyer.worker.logger import BaseLog
 from drudgeyer.worker.shell import BaseWorker, Worker
 
@@ -13,6 +14,9 @@ class ValidDequeueTerminateRun(BaseWorker):
     async def dequeue(self) -> BaseQueueModel:
         assert not self.should_exit
         return BaseQueueModel(order=0, command="echo 1", id="11-11")
+
+    async def worked(self, task: BaseQueueModel, status: Status) -> None:
+        return None  # pragma: no cover
 
     async def run(self, task: BaseQueueModel, loop: AbstractEventLoop) -> None:
         assert not self.should_exit
@@ -25,6 +29,9 @@ class NullTerminateDequeueNullRun(BaseWorker):
         self.handle_exit(SIGINT, None)
         return None
 
+    async def worked(self, task: BaseQueueModel, status: Status) -> None:
+        return super().worked(task, status)  # pragma: no cover
+
     async def run(self, task: BaseQueueModel, loop: AbstractEventLoop) -> None:
         assert not self.should_exit  # pragma: no cover
 
@@ -34,6 +41,9 @@ class ValidTerminateDequeueNullRun(BaseWorker):
         assert not self.should_exit
         self.handle_exit(SIGINT, None)
         return BaseQueueModel(order=0, command="echo 1", id="11-11")
+
+    async def worked(self, task: BaseQueueModel, status: Status) -> None:
+        return super().worked(task, status)  # pragma: no cover
 
     async def run(self, task: BaseQueueModel, loop: AbstractEventLoop) -> None:
         assert not self.should_exit  # pragma: no cover
@@ -69,7 +79,17 @@ class DummyLogger(BaseLog):
         return print
 
 
-def test_exec_command(event_loop: AbstractEventLoop) -> None:
+@pytest.mark.asyncio
+async def test_exec_command() -> None:
+    loop = asyncio.get_event_loop()
     worker = Worker(logger=DummyLogger(), queue=None)  # type: ignore
+
+    # success
     task = BaseQueueModel(id="111-111", command="echo 1", order=0)
-    event_loop.run_until_complete(worker.run(task, event_loop))
+    status = await worker.run(task, loop)
+    assert status == Status.done
+
+    # failure
+    task = BaseQueueModel(id="111-111", command="python3 -c 'print())'", order=0)
+    status = await worker.run(task, loop)
+    assert status == Status.failed

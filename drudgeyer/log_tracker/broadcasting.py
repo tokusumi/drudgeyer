@@ -225,6 +225,10 @@ def streamer(
     return _streamer
 
 
+class PruneIDs(BaseModel):
+    ids: List[str]
+
+
 def create_app(read_streamer: BaseReadStreamer) -> FastAPI:
     app = FastAPI()
 
@@ -233,6 +237,20 @@ def create_app(read_streamer: BaseReadStreamer) -> FastAPI:
         path = Path("storage/queue")
         with path.open("a+") as f:
             f.write(body.cmd)
+
+    def get_filehandler() -> Optional[QueueFileHandler]:
+        if isinstance(read_streamer, LocalReadStreamer):
+            filehandler = read_streamer._file
+            return filehandler
+        return None
+
+    @app.post("/log-trace/prune")
+    async def log_tracker_prune(
+        body: PruneIDs,
+        file_handler: Optional[QueueFileHandler] = Depends(get_filehandler),
+    ) -> None:
+        if file_handler and body.ids:
+            await asyncio.gather(*[file_handler.delete(id) for id in body.ids])
 
     @app.websocket("/log-trace")
     async def log_tracker(
@@ -271,5 +289,6 @@ def run_receiver(
                 handler(sig, frame)
 
     config = Config(app=app, loop=event_loop, log_level=logging.ERROR)
+
     server = SubServer(config)
     return server

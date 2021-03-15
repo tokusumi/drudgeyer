@@ -147,7 +147,14 @@ class QueueFileHandler(BaseHandler):
         self.loggers[id] = logging.getLogger(id)
 
     async def delete(self, id: str) -> None:
-        pass
+        try:
+            del self.loggers[id]
+        except KeyError:
+            pass
+
+        path = Path(self.logdir) / id
+        if path.is_file():
+            path.unlink()
 
     async def get_record(self, id: str) -> Optional[str]:
         path = Path(self.logdir) / id
